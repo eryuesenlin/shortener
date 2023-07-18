@@ -8,6 +8,8 @@ import (
 
 	"shortener/internal/svc"
 	"shortener/internal/types"
+	"shortener/model"
+	"shortener/pkg/base62"
 	"shortener/pkg/connect"
 	"shortener/pkg/md5"
 	"shortener/pkg/urltool"
@@ -36,20 +38,20 @@ func (l *ConvertLogic) Convert(req *types.ConvertRequest) (resp *types.ConvertRe
 	// 1.1 数据不能为空
 	// 使用validator包来做参数校验
 	// 1.2 输入的长链必须是一个能请求通的网站
-	if ok:=connect.Get(req.LongUrl);!ok{
-		return nil,errors.New("无效的链接")
+	if ok := connect.Get(req.LongUrl); !ok {
+		return nil, errors.New("无效的链接")
 	}
 	// 1.3 判断之前是否已经转链过（数据库中是否已存在该长链接）
 	// 1.3.1 给长链接生产md5值
-	md5Value:=md5.Sum([]byte(req.LongUrl))
+	md5Value := md5.Sum([]byte(req.LongUrl))
 	// 1.3.2 拿md5去数据库中查是否存在
-	u,err:=l.svcCtx.ShortUrlModel.FindOneByMd5(l.ctx,sql.NullString{String: md5Value,Valid: true})
-	if err!=sqlx.ErrNotFound{
-		if err==nil{
-			return nil,fmt.Errorf("该链接已被转为%s", u.Surl.String)
+	u, err := l.svcCtx.ShortUrlModel.FindOneByMd5(l.ctx, sql.NullString{String: md5Value, Valid: true})
+	if err != sqlx.ErrNotFound {
+		if err == nil {
+			return nil, fmt.Errorf("该链接已被转为%s", u.Surl.String)
 		}
-		logx.Errorw("ShortUrlModel.FindOneByMd5 failed",logx.LogField{Key:"err",Value: err.Error()})
-		return nil,err
+		logx.Errorw("ShortUrlModel.FindOneByMd5 failed", logx.LogField{Key: "err", Value: err.Error()})
+		return nil, err
 	}
 	// 1.4 输入的不能是一个短链接
 	// 输入的是一个完整的url q1mi.cn/1d12a?name=q1mi
@@ -66,12 +68,42 @@ func (l *ConvertLogic) Convert(req *types.ConvertRequest) (resp *types.ConvertRe
 		logx.Errorw("ShortUrlModel.FindOneBySurl failed", logx.LogField{Key: "err", Value: err.Error()})
 		return nil, err
 	}
-	
-	// 2. 取号
-	// 3. 号码转短链
-	// 4. 存储长短链接映射关系
-	// 5. 返回响应
 
+	var short string
+	for {
+		// 2. 取号
+		// 每来一个转链请求，我们就使用 REPLACE INTO语句往 sequence 表插入一条数据，并且取出主键id作为号码
+		seq, err := l.svcCtx.Sequence.Next()
+		if err != nil {
+			logx.Errorw("Sequence.Next() failed", logx.LogField{Key: "err", Value: err.Error()})
+			return nil, err
+		}
+		fmt.Println(seq)
 
-	return
+		// 3. 号码转短链
+		// 3.1 安全性
+		short = base62.Int2String(seq)
+		// 3.2 短域名避免某些特殊词
+		if _, ok := l.svcCtx.ShortUrlBlackList[short]; !ok {
+			break	// 生成不在黑名单中的短链接就跳出for循环 
+		}
+	}
+	fmt.Printf("short:%v\n", short)
+
+// 4. 存储长短链接映射关系
+if _, err := l.svcCtx.ShortUrlModel.Insert(
+	l.ctx,
+	&model.ShortUrlMap{
+		Lurl: sql.NullString{String: req.LongUrl, Valid: true},
+		Md5:  sql.NullString{String: md5Value, Valid: true},
+		Surl: sql.NullString{String: short, Valid: true},
+	},
+); err != nil {
+	logx.Errorw("ShortUrlModel.Insert() failed", logx.LogField{Key: "err", Value: err.Error()})
+	return nil, err
+}
+// 5. 返回响应
+// 5.1 返回的是 短域名+短链接  gdran.cn/1En
+shortUrl := l.svcCtx.Config.ShortDoamin + "/" + short
+return &types.ConvertResponse{ShortUrl: shortUrl}, nil
 }

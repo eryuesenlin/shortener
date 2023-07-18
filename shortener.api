@@ -1,5 +1,5 @@
 /* 短链接项目
-* author: q1mi
+* author: gdran
 */
 
 type ConvertRequest {
@@ -23,7 +23,7 @@ service shortener-api {
 	@handler ConvertHandler
 	post /convert(ConvertRequest) returns(ConvertResponse)
 
-	// q1mi.cn/lycsa1
+	// gdran.cn/lycsa1
 	@handler ShowHandler
 	get /:shortUrl(ShowRequest) returns(ShowResponse)
 

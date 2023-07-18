@@ -12,7 +12,7 @@ var client = &http.Client{
 	Transport: &http.Transport{
 		DisableKeepAlives: true,
 	},
-	Timeout: 2 * time.Second,
+	Timeout: 10 * time.Second,
 }
 
 // Get 判断url是否能请求通

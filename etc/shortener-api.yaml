@@ -7,3 +7,9 @@ ShortUrlDB:
 
 Sequence:
   DSN: root:mysql55555@tcp(192.168.10.100:3306)/shortener?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
+
+BaseString: J0rs12O5TUV8IW7D9aBdXeCfghiMQj3klmop6qtuvbcwx4zAEFGHKLNnPRYSZy
+
+ShortUrlBlackList: ["version","fuck","stupid","convert","health","css"]
+
+ShortDoamin: gdran.cn

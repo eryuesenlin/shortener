@@ -1,7 +1,6 @@
 # 短链接项目
 
 
-
 ## 搭建项目的骨架
 
 1. 建库建表
@@ -41,7 +40,7 @@ CREATE TABLE `short_url_map` (
 
 ```go
 /* 短链接项目
-* author: q1mi
+* author: gdran
 */
 
 type ConvertRequest {
@@ -65,7 +64,7 @@ service shortener-api {
 	@handler ConvertHandler
 	post /convert(ConvertRequest) returns(ConvertResponse)
 	
-    // q1mi.cn/lycsa1
+    // gdran.cn/lycsa1
 	@handler ShowHandler
 	get /:shortUrl(ShowRequest) returns(ShowResponse)
 	
@@ -80,9 +79,9 @@ goctl api go -api shortener.api -dir .
 
 3. 根据数据表生成model层代码
 ```bash
-goctl model mysql datasource -url="root:root1234@tcp(127.0.0.1:3306)/db3" -table="short_url_map"  -dir="./model"
+goctl model mysql datasource -url="root:mysql55555@tcp(127.0.0.1:3306)/shortener" -table="short_url_map"  -dir="./model"
 
-goctl model mysql datasource -url="root:root1234@tcp(127.0.0.1:3306)/db3" -table="sequence"  -dir="./model"
+goctl model mysql datasource -url="root:mysql55555@tcp(127.0.0.1:3306)/shortener" -table="sequence"  -dir="./model"
 ```
 
 4. 下载项目依赖
